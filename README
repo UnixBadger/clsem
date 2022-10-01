@@ -1,42 +1,44 @@
-DESCRIPTION:
-    The clsem (command line semaphore) application provides command line access to the Unix semaphore
-    facility. A semaphore is a number that never goes negative. It is usually initialized to the 
-    maximum count of some resource: number of processes, megabytes of memory, number of network
+DESCRIPTION
+    The clsem (command line semaphore) application provides command line access to the Unix System V
+    semaphore facility. A semaphore is a number that never goes negative. It is usually initialized to
+    the maximum count of some resource: number of processes, megabytes of memory, number of network
     connections, etc. Resource users decrement the semaphore value. If value is 0, the user blocks
     until some other user, another process or thread, increments the semaphore.
 
-INSTALLATION:
+INSTALLATION
     Running:
-        ./configure --prefix=PATH
-        make
-        make install
-    will build the clsem application and install
-        ${PREFIX}/bin/clsem
-        ${PREFIX}/share/man/man1/clsem.1
+	./configure --prefix=PATH
+	make
+	make install
+    will build the clsem application and install the following files:
+	PATH/bin/clsem
+	PATH/lib/clsem/20220930182113/share/AFL-3.0
+	PATH/lib/clsem/20220930182113/share/COPYRIGHT
+	PATH/lib/clsem/20220930182113/share/man/man1/clsem.1
     "./configure" is the same as "./configure --prefix=/usr/local"
 
-USAGE:
+USAGE
     clsem has two main subcommands.
-        clsem new ... 
-            Creates a semaphore.
-        clsem incr ... 
-            Tries to increase or decrease a semaphore. If the semaphore is 0, the clsem call blocks
-            until another process increments it. 
-    See clsem(1).
+	clsem new env command [args]
+	    Creates a semaphore and executes command. It destroys the semaphore when command exits.
+	clsem incr sem_id i
+	    Tries to increase or decrease semaphore identified as sem_id. If the semaphore is 0 and
+	    i < 0, the clsem call blocks until another process calls "clsem incr" with i > 0.
+    For details and other subcommands, run "clsem man" or "clsem help".
 
     Typical usage looks like:
-        clsem new SEM_ENV ./run_progs.sh
+	clsem new SEM_ENV ./run_progs.sh
     This creates a semaphore and executes run_progs.sh. $SEM_ENV in the run_progs.sh execution
     environment contains the semaphore identifier.
 
     run_progs.sh could run 8 programs, 4 at a time, with a code fragment like this:
 
-        clsem incr $SEM_ENV 4
-        for prog in prog1 prog2 prog3 prog4 prog5 prog6 prog7 prog8
-        do
-            clsem incr $SEM_ENV -1
-            ( $prog; clsem incr $SEM_ENV 1; ) & 
-        done
+	clsem incr $SEM_ENV 4
+	for prog in prog1 prog2 prog3 prog4 prog5 prog6 prog7 prog8
+	do
+	    clsem incr $SEM_ENV -1
+	    ( $prog; clsem incr $SEM_ENV 1; ) &
+	done
 
     Assume prog1 prog2 prog3 prog4 prog5 prog6 prog7 prog8 take a long time.
     Semaphore starts with value 4.
@@ -52,15 +54,24 @@ USAGE:
     prog increments the semaphore. The blocking and unblocking continues such that the number of
     background processes running at any one time is at most 4.
 
-REFERENCES:
+    To put the "clsem new" call inside run_progs.sh (cleaner), insert the following block before any
+    clsem calls:
+	if [ "$SEM_ENV" = "" ]
+	then
+	    exec clsem new SEM_ENV $0 "$@"
+	fi
+
+    For more information, run "clsem man" or "clsem help".
+
+REFERENCES
     https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap04.html#tag_04_17
     https://pubs.opengroup.org/onlinepubs/9699919799/functions/semget.html
     https://pubs.opengroup.org/onlinepubs/9699919799/functions/semctl.html
     https://pubs.opengroup.org/onlinepubs/9699919799/functions/semop.html
     Rochkind, Marc J. Advanced UNIX Programming, Second Edition. Pearson Eduction. 2004.
 
-
-LICENSE:
-    The software is distributed under the terms of the Academic Free License, in AFL-3.0.
+LICENSE
+    This software is under copyright to Gordon D. Carrie. All rights reserved.
+    This software is distributed under the terms of the Academic Free License, in AFL-3.0.
     Please email feedback to Gordon Carrie dev1960@polarismail.net.
 
